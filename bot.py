@@ -12,6 +12,7 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.context import FSMContext
 from aiogram.filters import Command
 from dotenv import load_dotenv
+from groq import Groq
 
 load_dotenv()
 
@@ -162,8 +163,16 @@ async def get_llm_recommendations(user_data: dict, section: str = "deep"):
 """
 
     # TODO: здесь должен быть реальный вызов LLM API с system_prompt и user_prompt
-    return f"Тест, данные дошли до LLM-интеграции. Вот фрагмент собранных данных:\n\n{user_prompt}"
-
+    try:
+        client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+        message = client.messages.create(
+            model="mixtral-8x7b-32768",
+            max_tokens=1024,
+            messages=[{"role": "user", "content": user_prompt}]
+        )
+        return message.content[0].text
+    except Exception as e:
+        return f"Ошибка Groq API: {str(e)}"
 
 # --- Main Router ---
 router = Router()
@@ -525,3 +534,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
