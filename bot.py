@@ -164,7 +164,7 @@ async def get_llm_recommendations(user_data: dict, section: str = "deep"):
 
     # TODO: здесь должен быть реальный вызов LLM API с system_prompt и user_prompt
     try:
-        client = Groq(api_key=os.getenv("gsk_RJfm3a9V08smDzd9qqfWGdyb3FYF7RhJM85qN6kuq27PSLEf6"))
+        client = Groq(api_key=os.getenv("GROQ_API_KEY"))
         response = client.chat.completions.create(
             model="mixtral-8x7b-32768",
             max_tokens=2048,
