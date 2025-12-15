@@ -164,8 +164,7 @@ async def get_llm_recommendations(user_data: dict, section: str = "deep"):
 Желаемый срок: {user_data.get('goal_term', '-')} месяцев
 """
 
-    # TODO: здесь должен быть реальный вызов LLM API с system_prompt и user_prompt
-       try:
+    try:
         response = client.chat.completions.create(
             model="mixtral-8x7b-32768",
             max_tokens=2048,
@@ -178,9 +177,6 @@ async def get_llm_recommendations(user_data: dict, section: str = "deep"):
     except Exception as e:
         return f"Ошибка Groq API: {str(e)}"
 
-        return response.choices[0].message.content
-    except Exception as e:
-        return f"Ошибка Groq API: {str(e)}"
 
 
 # --- Main Router ---
@@ -543,6 +539,7 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
 
