@@ -162,7 +162,7 @@ async def get_llm_recommendations(user_data: dict, section: str = "deep"):
 Желаемый срок: {user_data.get('goal_term', '-')} месяцев
 """
 
-      # TODO: здесь должен быть реальный вызов LLM API с system_prompt и user_prompt
+    # TODO: здесь должен быть реальный вызов LLM API с system_prompt и user_prompt
     try:
         client = Groq(api_key=os.getenv("GROQ_API_KEY"))
         response = client.chat.completions.create(
@@ -544,6 +544,7 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
 
