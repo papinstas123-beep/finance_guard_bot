@@ -162,16 +162,27 @@ async def get_llm_recommendations(user_data: dict, section: str = "deep"):
 Желаемый срок: {user_data.get('goal_term', '-')} месяцев
 """
 
-    # TODO: здесь должен быть реальный вызов LLM API с system_prompt и user_prompt
+      # TODO: здесь должен быть реальный вызов LLM API с system_prompt и user_prompt
     try:
         client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-message = client.messages.create(            model="mixtral-8x7b-32768",
+        response = client.chat.completions.create(
+            model="mixtral-8x7b-32768",
             max_tokens=2048,
-system="Ты — ведущий независимый финансовый консультант с многолетним опытом. Твоя экспертиза: личные финансы, инвестирование, налоговое планирование, управление долгом, пенсионное планирование. Анализируя финансовую ситуацию пользователя, даёшь действенные, персонализированные рекомендации. Ты ВСЕГДА: 1) Приводишь КОНКРЕТНЫЕ цифры и расчёты, 2) Указываешь приоритеты (критичное → важное → желательное), 3) Даёшь пошаговый план с реальными сроками, 4) Объясняешь доступно, 5) Указываешь риски и возможности, 6) Адаптируешь под Россию (налоги, продукты, инфляция), 7) Используешь данные пользователя для расчётов, 8) Мотивируешь достижимыми целями, 9) Даёшь советы применяемые СЕГОДНЯ. Отвечай на русском, будь дружелюбен и уверен. Предупреждай о рисках инвестирования."            messages=[{"role": "user", "content": user_prompt}]
+            messages=[
+                {
+                    "role": "system",
+                    "content": system_prompt,
+                },
+                {
+                    "role": "user",
+                    "content": user_prompt,
+                },
+            ],
         )
-        return message.content[0].text
+        return response.choices[0].message.content
     except Exception as e:
         return f"Ошибка Groq API: {str(e)}"
+
 
 # --- Main Router ---
 router = Router()
@@ -533,5 +544,6 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
