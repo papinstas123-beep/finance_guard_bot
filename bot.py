@@ -560,9 +560,9 @@ async def on_file_received(msg: Message, state: FSMContext):
 
 # --- Main Entry Point ---
 
-async def reminders_loop(bot: Bot):
+aasync def reminders_loop(bot: Bot):
     """
-    Простая фоновая задача, которая периодически рассылает напоминания.
+    Простая фоновая задача, которая раз в сутки шлёт напоминания.
     """
     while True:
         if ACTIVE_USERS:
@@ -571,13 +571,15 @@ async def reminders_loop(bot: Bot):
                     await bot.send_message(
                         user_id,
                         "Напоминаю про финансы. ✍️\n"
-                        "Записал уже расходы за сегодня? Если нет — напиши /start, разберёмся."
+                        "Сегодня уже смотрел на свои расходы и план?\n"
+                        "Если нет — напиши /start, разберёмся по шагам."
                     )
                 except Exception as e:
                     print(f"Не удалось отправить напоминание {user_id}: {e}")
 
-        # для теста 60 секунд, потом можно 24*60*60
-        await asyncio.sleep(60)
+        # раз в сутки (24 * 60 * 60 секунд)
+        await asyncio.sleep(24 * 60 * 60)
+
 
 
 async def health(request):
@@ -620,6 +622,7 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
 
