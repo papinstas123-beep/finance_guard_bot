@@ -14,6 +14,8 @@ from aiogram.filters import Command
 from dotenv import load_dotenv
 from groq import Groq
 from aiohttp import web
+ACTIVE_USERS = set()
+
 
 load_dotenv()
 
@@ -188,6 +190,8 @@ router = Router()
 @router.message(Command("start"))
 async def cmd_start(msg: Message, state: FSMContext):
     await state.clear()
+    ACTIVE_USERS.add(msg.from_user.id)  # ← запоминаем пользователя
+
     welcome_text = (
         "👋 Привет! Я FinancialGuardBot — твой строгий финансовый наставник.\n\n"
         "Я помогу тебе:\n"
@@ -414,10 +418,43 @@ async def process_deep_analysis(msg: Message, state: FSMContext):
     recommendation = await get_llm_recommendations(data, section="deep")
 
     await msg.answer(
-        f"📊 Краткий отчёт:\n\n{recommendation}",
-        reply_markup=result_menu_kb(),
+        f"📊 Краткий отчёт:\n\n{recommendation}"
     )
+
+    await msg.answer(
+        "Как двигаемся дальше?\n"
+        "1️⃣ Разобрать подробно, где сильнее всего утекают деньги.\n"
+        "2️⃣ Составить жёсткий помесячный план.\n\n"
+        "Напиши просто цифру: 1 или 2."
+    )
+
     await state.set_state(DeepAnalyze.deep_result_short)
+    @router.message(DeepAnalyze.deep_result_short, F.text == "1")
+async def deep_more_leaks(msg: Message, state: FSMContext):
+    data = await state.get_data()
+    # Можно передать тот же data, но с пометкой секции
+    recommendation = await get_llm_recommendations(data, section="deep_full")
+    await msg.answer(
+        "Разбираю, где у тебя самые большие дыры в бюджете...\n"
+        "Вот что нужно подкрутить в первую очередь:\n\n"
+        f"{recommendation}"
+    )
+    await msg.answer(
+        "Готов перейти к плану действий? Напиши: план"
+    )
+
+
+@router.message(DeepAnalyze.deep_result_short, F.text == "2")
+async def deep_make_plan(msg: Message, state: FSMContext):
+    data = await state.get_data()
+    recommendation = await get_llm_recommendations(data, section="goal")
+    await msg.answer(
+        "Ок, без воды. Вот жёсткий помесячный план:\n\n"
+        f"{recommendation}"
+    )
+    await msg.answer(
+        "Хочешь, чтобы я иногда напоминал тебе держаться плана? Напиши: напоминания"
+    )
 
 
 @router.callback_query(DeepAnalyze.deep_result_short, F.data == "show_deep_full")
@@ -525,6 +562,27 @@ async def health(request):
     return web.Response(text="OK")
 
 async def start_web_app():
+    async def reminders_loop(bot: Bot):
+    """
+    Простая фоновая задача, которая периодически рассылает напоминания.
+    """
+    while True:
+        if ACTIVE_USERS:
+            for user_id in list(ACTIVE_USERS):
+                try:
+                    await bot.send_message(
+                        user_id,
+                        "Напоминаю про финансы. ✍️\n"
+                        "Записал уже расходы за сегодня? Если нет — напиши /start, разберёмся."
+                    )
+                except Exception as e:
+                    print(f"Не удалось отправить напоминание {user_id}: {e}")
+
+        # КАК ЧАСТО ШЛЁМ:
+        # для теста можно поставить 60 (раз в минуту),
+        # в реальной жизни — раз в сутки:
+        await asyncio.sleep(24 * 60 * 60)
+
     app = web.Application()
     app.router.add_get("/", health)
     port = int(os.getenv("PORT", 10000))
@@ -547,13 +605,18 @@ async def main():
     dp.include_router(test_router)
     dp.include_router(router)
 
-    # запускаем маленький веб-сервер для Render
+    # 1) запускаем веб-сервер для Render
     await start_web_app()
 
+    # 2) запускаем фоновую задачу с напоминаниями
+    asyncio.create_task(reminders_loop(bot))
+
+    # 3) запускаем long polling
     print("Бот запущен. Нажми Ctrl+C, чтобы остановить.")
     await dp.start_polling(bot)
 
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
