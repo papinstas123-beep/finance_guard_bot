@@ -457,6 +457,7 @@ async def deep_make_plan(msg: Message, state: FSMContext):
         "Хочешь, чтобы я иногда напоминал тебе держаться плана? Напиши: напоминания"
     )
 
+@router.callback_query(DeepAnalyze.deep_result_short, F.data == "show_deep_full")
 async def show_deep_full(call: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     recommendation = await get_llm_recommendations(data, section="deep_full")
@@ -466,6 +467,7 @@ async def show_deep_full(call: CallbackQuery, state: FSMContext):
         reply_markup=result_menu_kb(),
     )
     await state.set_state(DeepAnalyze.deep_result_full)
+
 
 
 # --- Goal Flow ---
@@ -618,5 +620,6 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
