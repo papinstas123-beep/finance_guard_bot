@@ -16,6 +16,8 @@ from groq import Groq
 
 load_dotenv()
 
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+client = Groq(api_key=GROQ_API_KEY)
 
 # FSM States
 class DeepAnalyze(StatesGroup):
@@ -163,22 +165,19 @@ async def get_llm_recommendations(user_data: dict, section: str = "deep"):
 """
 
     # TODO: здесь должен быть реальный вызов LLM API с system_prompt и user_prompt
-    try:
-        client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+       try:
         response = client.chat.completions.create(
             model="mixtral-8x7b-32768",
             max_tokens=2048,
             messages=[
-                {
-                    "role": "system",
-                    "content": system_prompt,
-                },
-                {
-                    "role": "user",
-                    "content": user_prompt,
-                },
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
             ],
         )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"Ошибка Groq API: {str(e)}"
+
         return response.choices[0].message.content
     except Exception as e:
         return f"Ошибка Groq API: {str(e)}"
@@ -213,7 +212,7 @@ async def return_to_menu(call: CallbackQuery, state: FSMContext):
 # --- Quick Analyze Flow ---
 @router.callback_query(F.data == "quick_analyze")
 async def start_quick_analyze(call: CallbackQuery, state: FSMContext):
-    await call.message.edit_reply_markup()
+    await call.message.edit_reply_markup(reply_markup=None)
     await call.message.answer("⚡ Быстрый анализ\n\nТвой доход (чистыми в месяц)?")
     await state.set_state(QuickAnalyze.quick_income)
 
@@ -287,7 +286,7 @@ async def quick_categories_done(call: CallbackQuery, state: FSMContext):
     quick_expenses = ", ".join(selected_names)
     await state.update_data(quick_expenses=quick_expenses)
 
-    await call.message.edit_reply_markup()
+    await call.message.edit_reply_markup(reply_markup=None)
 
     income = data.get("income", 0)
     await call.message.answer(
@@ -305,7 +304,7 @@ async def show_quick_recommendations(call: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     recommendation = await get_llm_recommendations(data, section="quick")
 
-    await call.message.edit_reply_markup()
+    await call.message.edit_reply_markup(reply_markup=None)
     await call.message.answer(
         f"💡 Рекомендации по быстрому анализу:\n\n{recommendation}",
         reply_markup=quick_result_kb(),
@@ -316,7 +315,7 @@ async def show_quick_recommendations(call: CallbackQuery, state: FSMContext):
 # --- Deep Analyze Flow ---
 @router.callback_query(F.data == "deep_analyze")
 async def start_deep_analyze(call: CallbackQuery, state: FSMContext):
-    await call.message.edit_reply_markup()
+    await call.message.edit_reply_markup(reply_markup=None)
     await call.message.answer("🔍 Глубокий анализ\n\nТвой доход (чистыми в месяц)?")
     await state.set_state(DeepAnalyze.deep_income)
 
@@ -385,7 +384,7 @@ async def deep_subs_step(msg: Message, state: FSMContext):
 
 @router.callback_query(DeepAnalyze.deep_credits, F.data == "credits_yes")
 async def deep_has_credits(call: CallbackQuery, state: FSMContext):
-    await call.message.edit_reply_markup()
+    await call.message.edit_reply_markup(reply_markup=None)
     await call.message.answer("Ежемесячный платёж по кредитам?")
     await state.set_state(DeepAnalyze.deep_credit_sum)
 
@@ -393,7 +392,7 @@ async def deep_has_credits(call: CallbackQuery, state: FSMContext):
 @router.callback_query(DeepAnalyze.deep_credits, F.data == "credits_no")
 async def deep_no_credits(call: CallbackQuery, state: FSMContext):
     await state.update_data(credit_sum=0)
-    await call.message.edit_reply_markup()
+    await call.message.edit_reply_markup(reply_markup=None)
     await call.message.answer("Анализирую данные…")
     await state.set_state(DeepAnalyze.deep_processing)
     await process_deep_analysis(call.message, state)
@@ -439,7 +438,7 @@ async def show_deep_full(call: CallbackQuery, state: FSMContext):
 # --- Goal Flow ---
 @router.callback_query(F.data == "goal_start")
 async def start_goal(call: CallbackQuery, state: FSMContext):
-    await call.message.edit_reply_markup()
+    await call.message.edit_reply_markup(reply_markup=None)
     await call.message.answer(
         "🎯 Цель (накопить)\n\n"
         "Опиши свою финансовую цель (например: отпуск, новый телефон, ремонт, машина):"
@@ -500,7 +499,7 @@ async def process_goal_plan(msg: Message, state: FSMContext):
 # --- Check/Statement Upload ---
 @router.callback_query(F.data == "upload_check")
 async def start_check_upload(call: CallbackQuery, state: FSMContext):
-    await call.message.edit_reply_markup()
+    await call.message.edit_reply_markup(reply_markup=None)
     await call.message.answer(
         "📄 Загрузить чек/выписку\n\nПришли фото, документ или текст выписки по расходам."
     )
@@ -544,6 +543,7 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
 
 
 
