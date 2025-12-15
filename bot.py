@@ -13,6 +13,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.filters import Command
 from dotenv import load_dotenv
 from groq import Groq
+from aiohttp import web
 
 load_dotenv()
 
@@ -520,6 +521,19 @@ async def on_file_received(msg: Message, state: FSMContext):
 
 
 # --- Main Entry Point ---
+async def health(request):
+    return web.Response(text="OK")
+
+async def start_web_app():
+    app = web.Application()
+    app.router.add_get("/", health)
+    port = int(os.getenv("PORT", 10000))
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
+
+# --- Main Entry Point ---
 async def main():
     bot_token = os.getenv("BOT_TOKEN")
     if not bot_token:
@@ -533,12 +547,17 @@ async def main():
     dp.include_router(test_router)
     dp.include_router(router)
 
+    # запускаем маленький веб-сервер для Render
+    await start_web_app()
+
     print("Бот запущен. Нажми Ctrl+C, чтобы остановить.")
     await dp.start_polling(bot)
 
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+
 
 
 
