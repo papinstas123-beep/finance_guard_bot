@@ -167,13 +167,13 @@ async def get_llm_recommendations(user_data: dict, section: str = "deep"):
 
     try:
         response = client.chat.completions.create(
-            model="mixtral-8x7b-32768",
-            max_tokens=2048,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-        )
+    model="llama-3.3-70b-versatile",
+    max_tokens=2048,
+    messages=[
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt},
+    ],
+)
         return response.choices[0].message.content
     except Exception as e:
         return f"Ошибка Groq API: {str(e)}"
@@ -556,3 +556,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
