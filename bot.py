@@ -429,10 +429,11 @@ async def process_deep_analysis(msg: Message, state: FSMContext):
     )
 
     await state.set_state(DeepAnalyze.deep_result_short)
-    @router.message(DeepAnalyze.deep_result_short, F.text == "1")
+
+
+@router.message(DeepAnalyze.deep_result_short, F.text == "1")
 async def deep_more_leaks(msg: Message, state: FSMContext):
     data = await state.get_data()
-    # Можно передать тот же data, но с пометкой секции
     recommendation = await get_llm_recommendations(data, section="deep_full")
     await msg.answer(
         "Разбираю, где у тебя самые большие дыры в бюджете...\n"
@@ -456,8 +457,6 @@ async def deep_make_plan(msg: Message, state: FSMContext):
         "Хочешь, чтобы я иногда напоминал тебе держаться плана? Напиши: напоминания"
     )
 
-
-@router.callback_query(DeepAnalyze.deep_result_short, F.data == "show_deep_full")
 async def show_deep_full(call: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     recommendation = await get_llm_recommendations(data, section="deep_full")
@@ -558,11 +557,8 @@ async def on_file_received(msg: Message, state: FSMContext):
 
 
 # --- Main Entry Point ---
-async def health(request):
-    return web.Response(text="OK")
 
-async def start_web_app():
-    async def reminders_loop(bot: Bot):
+async def reminders_loop(bot: Bot):
     """
     Простая фоновая задача, которая периодически рассылает напоминания.
     """
@@ -578,11 +574,15 @@ async def start_web_app():
                 except Exception as e:
                     print(f"Не удалось отправить напоминание {user_id}: {e}")
 
-        # КАК ЧАСТО ШЛЁМ:
-        # для теста можно поставить 60 (раз в минуту),
-        # в реальной жизни — раз в сутки:
-        await asyncio.sleep(24 * 60 * 60)
+        # для теста 60 секунд, потом можно 24*60*60
+        await asyncio.sleep(60)
 
+
+async def health(request):
+    return web.Response(text="OK")
+
+
+async def start_web_app():
     app = web.Application()
     app.router.add_get("/", health)
     port = int(os.getenv("PORT", 10000))
@@ -591,7 +591,7 @@ async def start_web_app():
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
 
-# --- Main Entry Point ---
+
 async def main():
     bot_token = os.getenv("BOT_TOKEN")
     if not bot_token:
